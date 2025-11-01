@@ -1,0 +1,37 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type PostType {
+  id: ID!
+  content: String!
+  likeCount: Float!
+  dislikeCount: Float!
+  likedByUser: Boolean!
+  dislikedByUser: Boolean!
+}
+
+type PostUpdateDTO {
+  postId: ID!
+  likeCount: Float!
+  dislikeCount: Float!
+}
+
+type Query {
+  hello: String!
+  post(postId: ID!): PostType!
+}
+
+type Mutation {
+  triggerMessage(message: String!): Boolean!
+  createPost(content: String!): PostType!
+  likePost(postId: String!): PostType!
+  unlikePost(postId: String!): PostType!
+  dislikePost(postId: String!): PostType!
+  undislikePost(postId: String!): PostType!
+}
+
+type Subscription {
+  messageAdded: String!
+  onPostUpdate(postId: ID!): PostUpdateDTO!
+}
