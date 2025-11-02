@@ -14,12 +14,11 @@ export class UserSeeder implements OnModuleInit {
 
     if (count > 0) {
       this.logger.log(
-        `✅ Users already exist, skipping seeding (${count} found).`,
+        `Users already exist in the codebase, skipping seeding (${count} found).`,
       );
       return;
     }
 
-    // Use deterministic ObjectIds for consistent testing
     const users: Partial<User>[] = [
       { username: 'pearl', email: 'pearl@example.com' },
       { username: 'devbot', email: 'devbot@example.com' },
@@ -27,6 +26,6 @@ export class UserSeeder implements OnModuleInit {
     ];
 
     await this.userModel.insertMany(users);
-    this.logger.log(`👤 Seeded ${users.length} users into MongoDB.`);
+    this.logger.log(`Seeded ${users.length} users into MongoDB.`);
   }
 }

@@ -8,9 +8,6 @@ export class PostType {
   @Field()
   content: string;
 
-  // @Field(() => UserDTO)
-  // author: UserDTO;
-
   @Field()
   likeCount: number;
 
@@ -22,4 +19,10 @@ export class PostType {
 
   @Field()
   dislikedByUser: boolean;
+
+  @Field(() => [ID])
+  likerIds: string[];
+
+  @Field(() => [ID], { nullable: true })
+  dislikerIds?: string[];
 }

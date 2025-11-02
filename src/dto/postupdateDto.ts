@@ -10,4 +10,10 @@ export class PostUpdateDTO {
 
   @Field()
   dislikeCount: number;
+
+  @Field(() => [ID])
+  likerIds: string[];
+
+  @Field(() => [ID], { nullable: true })
+  dislikerIds?: string[];
 }

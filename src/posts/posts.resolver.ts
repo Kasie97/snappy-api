@@ -36,7 +36,6 @@ export class PostsResolver {
     @Args('postId') postId: string,
     @CurrentUser() user: { id: string },
   ) {
-    // Service will update AND publish
     return this.postsService.likePost(postId, user.id);
   }
 

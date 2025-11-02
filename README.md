@@ -1,98 +1,77 @@
-# 🧠 Awari Backend Assessment – Real-Time Engagement API
+# 🧠 Awari Backend Assessment – Snappy-API
 
 A **NestJS + GraphQL + MongoDB + Redis** backend for real-time post engagement (likes/dislikes), using a mock authentication system.
-
 ---
 
-## 🚀 1. Setup & Execution
+## 1. Setup & Execution
 
-### 🧩 Prerequisites
+### 1.1 Prerequisites
 
-Make sure you have installed:
+Make sure you have installed on your system:
 - **Node.js** v20+
 - **Docker** & **Docker Compose**
 - **Git**
 
 ---
 
-### 🧱 Clone & Run
+### 1.2 Clone & Run
+git clone https://github.com/Kasie97/snappy-api.git
+cd snappy-api
+Local Run Command: docker compose up --build
 
-```bash
-git clone https://github.com/YOUR_USERNAME/snappy-api.git
-cd awari-backend-assessment-api
-docker-compose up
 This will automatically start:
+NestJS API on port 3000
+MongoDB on port 27017
+Redis on port 6379
 
-🧩 NestJS API → port 3000
-
-🍃 MongoDB → port 27017
-
-🧠 Redis → port 6379
-
-Then open your browser at:
-👉 http://localhost:3000/graphql
-
-⚙️ 2. Environment Variables
-Create a file named .env in the project root:
-
-MONGO_URI=mongodb+srv://pearl:zuzwang@cluster0.jtfeezz.mongodb.net/snappy?retryWrites=true&w=majority&tls=true
-appName=SnappyAPi
-REDIS_HOST=localhost
-REDIS_PORT=6380
-url: 'ws://localhost:3000/graphql'
+Then open your browser at: http://localhost:3000/graphql (API ENDPOINT)
 
 
-🧰 3. Docker Setup
-Below are the Docker files you need in the project root.
+### 1.3 Dockerfile
+FROM node:22-alpine
 
-🐳 Dockerfile
-dockerfile
-Copy code
-# Use Node.js LTS
-FROM node:20-alpine
+WORKDIR /app
 
-# Create app directory
-WORKDIR /usr/src/app
-
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
 RUN npm install
 
-# Copy source code
+RUN npm install -g @nestjs/cli
+
 COPY . .
 
-# Build the NestJS app
-RUN npm run build
-
-# Expose port
 EXPOSE 3000
 
-# Start the app
-CMD ["npm", "run", "start:prod"]
-🧩 docker-compose.yml
+CMD ["npm", "run", "start:dev"]
 
-version: '3.9'
 
+### 1.4 Docker-compose.yml
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: snappy-api
+    restart: always
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongo:27017/snappy
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MOCK_HMAC_SECRET: local-secret
     depends_on:
       - mongo
       - redis
     volumes:
-      - .:/usr/src/app
+      - .:/app
+      - /app/node_modules
     command: npm run start:dev
 
   mongo:
-    image: mongo:6
-    container_name: snappy-mongo
+    image: mongo:7.0
+    container_name: mongo
     restart: always
     ports:
       - "27017:27017"
@@ -100,23 +79,28 @@ services:
       - mongo_data:/data/db
 
   redis:
-    image: redis:7
-    container_name: snappy-redis
+    image: redis:7.2
+    container_name: redis
     restart: always
     ports:
-      - "6379:6379"
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
 
 volumes:
   mongo_data:
-Run everything with one command:
+  redis_data:
 
-bash
-Copy code
-docker-compose up
-🧩 4. Design Decisions
-🧠 Data Model (MongoDB Schema)
-ts
-Copy code
+
+
+### 1.5 Environment Variables
+MONGO_URI=mongodb+srv://pearl:<password>@cluster0.jtfeezz.mongodb.net/snappy?retryWrites=true&w=majority&tls=true
+appName=SnappyAPi
+REDIS_HOST=localhost
+REDIS_PORT=6380
+
+2. Design Decisions
+### 2.1 Data Model (MongoDB Schema)
 {
   content: string;
   author: ObjectId;
@@ -133,49 +117,36 @@ Easier to query and update
 
 Prevents redundant data
 
-⚡ Real-Time Flow
+### 2.2 Real-Time Flow
 When a user executes likePost:
-
 GraphQL mutation likePost(postId) is called.
-
 PostsService updates MongoDB:
-
 Adds user ID to likes
-
 Removes from dislikes if necessary
-
 A Redis PubSub event is published:
 
-ts
-Copy code
 pubSub.publish(`postUpdated:${postId}`, { onPostUpdate: {...} })
 Any active onPostUpdate subscriptions instantly receive updated counts.
 
 Flow:
 GraphQL Mutation → MongoDB Update → Redis PubSub Publish → GraphQL Subscription Broadcast
 
-🔐 Mock Authentication
+### 2.3 Security/Mock Authentication
+
 Handled by MockAuthGuard
-
 Extracts mock user from:
-
 Header: x-user-id or x-username
-
 Cookie: mock-user-id
 
 Or generates one automatically
 
 Injected into resolvers using:
-
-ts
-Copy code
 @CurrentUser() user: { id: string }
 This ensures every request has a valid user context for testing.
 
-🧪 5. Testing & Verification
-✅ Test Case 1 – Like a Post (Mutation)
-graphql
-Copy code
+3. Testing & Verification
+### 3.1 Test Case 1 – Like a Post (Mutation)
+
 mutation LikePost($postId: ID!) {
   likePost(postId: $postId) {
     id
@@ -186,16 +157,13 @@ mutation LikePost($postId: ID!) {
     dislikedByUser
   }
 }
-Variables:
-
-json
-Copy code
+Variable needed to like a post:
 {
-  "postId": "PUT_A_REAL_POST_ID_HERE"
+  "postId": "PLEASE_PUT_A_REAL_POST_ID_HERE"
 }
-✅ Test Case 2 – Subscribe to Post Updates
-graphql
-Copy code
+
+### 3.2 Test Case 2 – Subscribe to Post Updates
+
 subscription OnPostUpdate($postId: ID!) {
   onPostUpdate(postId: $postId) {
     postId
@@ -203,189 +171,11 @@ subscription OnPostUpdate($postId: ID!) {
     dislikeCount
   }
 }
-🧭 Test Scenario
-Tab 1 → Open GraphQL Playground and run the Subscription above with a post ID.
+
+### 3.3 Test Scenario
+Tab 1 → Open GraphQL Playground (https://localhost:3000/graphql) and run the Subscription above with a post ID.
 
 Tab 2 → Run the Like Mutation for the same post ID.
 
 Observe → Tab 1 updates instantly with new like/dislike counts.
 
-Alternatively, you can run the included script:
-
-bash
-Copy code
-ts-node test-subscription.ts
-Just replace the placeholder PUT_A_REAL_POST_ID_HERE in the script.
-
-🧩 6. Stack Overview
-Component	Description
-NestJS	Backend framework
-GraphQL	Query interface
-MongoDB	Persistent storage
-Redis (PubSub)	Real-time event broadcasting
-MockAuthGuard	Simulated authentication
-
-⏰ 7. Submission Deadline
-Submit your public GitHub repository within 96 hours (4 days) of receiving the instructions.
-
-Ensure the project is runnable with a single command:
-
-bash
-Copy code
-docker-compose up
-🎙️ 8. Interview Preparation
-Be ready to discuss:
-
-Schema design and choice of data modeling
-
-Real-time system scalability with Redis PubSub
-
-How to extend mock authentication into real JWT auth
-
-Handling concurrency and atomic updates for reactions
-
-✅ 9. Author
-Your Name
-📧 your.email@example.com
-🕸️ GitHub: your-username
-
-yaml
-Copy code
-
----
-
-This `README.md` is:
-- **Fully compliant** with the submission document.
-- **Self-contained** (includes Dockerfile & Compose setup).
-- **Reviewer-ready** — they can clone, `docker-compose up`, and test immediately.
-
-Would you like me to also generate a **`.env.example` file** to accompany it (so reviewers know what variables to set)?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

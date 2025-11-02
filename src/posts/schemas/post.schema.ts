@@ -2,7 +2,7 @@ import { Schema, Document, Types } from 'mongoose';
 
 export interface Post extends Document {
   content: string;
-  author: Types.ObjectId; // reference to User
+  author: Types.ObjectId;
   likes: Types.ObjectId[];
   dislikes: Types.ObjectId[];
   createdAt: Date;

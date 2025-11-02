@@ -35,7 +35,7 @@ import Redis from 'ioredis';
         });
 
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`✅ Redis PubSub connected on ${host}:${port}`);
+          console.log(`Redis PubSub is connected on ${host}:${port}`);
         }
 
         return pubSub;

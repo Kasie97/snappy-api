@@ -31,11 +31,6 @@ export class PostsService {
     return this.buildPostResponse(newPost, authorId);
   }
 
-  /**
-   * Handles liking a post.
-   * - Throws if already liked.
-   * - Removes from dislikes if user previously disliked.
-   */
   async likePost(postId: string, userId: string): Promise<PostType> {
     const userObjectId = new Types.ObjectId(userId);
     const post = await this.postModel.findById(postId);
@@ -49,7 +44,6 @@ export class PostsService {
       throw new BadRequestException('This user already liked this post.');
     }
 
-    // If disliked before, remove dislike and add like atomically
     const update: any = hasDisliked
       ? {
           $pull: { dislikes: userObjectId },
@@ -70,9 +64,6 @@ export class PostsService {
     return this.buildPostResponse(updatedPost as Post, userId);
   }
 
-  /**
-   * Handles unliking a post (removes like if user liked before).
-   */
   async unlikePost(postId: string, userId: string): Promise<PostType> {
     const userObjectId = new Types.ObjectId(userId);
     const post = await this.postModel.findById(postId);
@@ -185,9 +176,10 @@ export class PostsService {
       dislikeCount,
       likedByUser,
       dislikedByUser,
+      likerIds: post.likes.map((l: Types.ObjectId) => l.toString()),
+      dislikerIds: post.dislikes.map((d: Types.ObjectId) => d.toString()),
     };
   }
-
   /**
    * Publishes updated counts to subscriptions.
    */
@@ -197,9 +189,13 @@ export class PostsService {
         postId: String(post._id),
         likeCount: post.likes.length,
         dislikeCount: post.dislikes.length,
+        likerIds: post.likes.map((l: Types.ObjectId) => l.toString()),
+        dislikerIds: post.dislikes.map((d: Types.ObjectId) => d.toString()),
       },
     };
+
     await this.pubSub.publish(`postUpdated:${String(post._id)}`, payload);
+
     this.logger.log(
       `Published post update for post ${String(post._id)}: ${JSON.stringify(
         payload.onPostUpdate,

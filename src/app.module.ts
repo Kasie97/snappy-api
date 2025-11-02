@@ -12,7 +12,6 @@ import { PostsModule } from './posts/posts.module';
 import { AuthModule } from './auth/auth.module';
 import { PubSubModule } from './pubsub/pubsub.module';
 import { AdaResolver } from './app.resolver';
-// import { PostsResolver } from './posts/posts.resolver';
 
 type GQLUser = { id?: string; username?: string; email?: string };
 type GQLRequest = { user?: GQLUser; headers?: Record<string, string> };
@@ -80,8 +79,6 @@ type GQLRequest = { user?: GQLUser; headers?: Record<string, string> };
             const user = connection.context.user;
             return { req: { user, headers: {} }, pubSub };
           }
-
-          // fallback for missing or malformed context
           return {
             req: {
               user: {
@@ -101,7 +98,6 @@ type GQLRequest = { user?: GQLUser; headers?: Record<string, string> };
   ],
   providers: [
     AdaResolver,
-    // PostsResolver,
     {
       provide: APP_GUARD,
       useClass: MockAuthGuard,

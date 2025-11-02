@@ -9,30 +9,18 @@ export class UsersService {
 
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  /**
-   * Find all users (for dev or seeding verification)
-   */
   async findAll(): Promise<User[]> {
     return this.userModel.find().exec();
   }
 
-  /**
-   * Get a single user by ID
-   */
   async findById(id: string | Types.ObjectId): Promise<User | null> {
     return this.userModel.findById(id).exec();
   }
 
-  /**
-   * Get a single user by username
-   */
   async findByUsername(username: string): Promise<User | null> {
     return this.userModel.findOne({ username }).exec();
   }
 
-  /**
-   * Pick a random user (useful for MockAuthGuard)
-   */
   async getRandomUser(): Promise<User | null> {
     const count = await this.userModel.estimatedDocumentCount();
     if (count === 0) return null;
@@ -42,17 +30,11 @@ export class UsersService {
     return user;
   }
 
-  /**
-   * Create a new user manually (for tests or migrations)
-   */
   async createUser(data: Partial<User>): Promise<User> {
     const user = new this.userModel(data);
     return user.save();
   }
 
-  /**
-   * Utility for clearing users in dev/test environments
-   */
   async clearAll(): Promise<void> {
     await this.userModel.deleteMany({});
     this.logger.warn('🧹 Cleared all users (dev/test only).');

@@ -26,8 +26,7 @@ const client = createClient({
       {
         next: onNext,
         error: (err) => {
-          console.error('❌ Subscription error:', err);
-          // Ensure the rejection reason is an Error instance
+          console.error('Subscription error:', err);
           reject(err instanceof Error ? err : new Error(String(err)));
         },
         complete: () => {
@@ -38,8 +37,6 @@ const client = createClient({
     );
   });
 })().catch((err) => {
-  // Handle any uncaught rejection from the top-level async IIFE
   console.error('Uncaught error in subscription client:', err);
-  // optional: set non-zero exit code in a script context
   if (typeof process !== 'undefined') process.exitCode = 1;
 });

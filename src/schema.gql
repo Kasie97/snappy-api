@@ -9,12 +9,16 @@ type PostType {
   dislikeCount: Float!
   likedByUser: Boolean!
   dislikedByUser: Boolean!
+  likerIds: [ID!]!
+  dislikerIds: [ID!]
 }
 
 type PostUpdateDTO {
   postId: ID!
   likeCount: Float!
   dislikeCount: Float!
+  likerIds: [ID!]!
+  dislikerIds: [ID!]
 }
 
 type Query {
