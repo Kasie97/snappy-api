@@ -102,13 +102,28 @@ dislikes: ObjectId[];
 createdAt: Date;
 updatedAt: Date;
 }
-likeCount / dislikeCount → computed dynamically (likes.length, dislikes.length)
 
-Embedding vs Referencing → referencing is used (arrays of User IDs)
+There are no explicit likeCount or dislikeCount fields in the database.
+Instead, they are computed dynamically from the array lengths of the likes and dislikes fields i.e
 
-Easier to query and update
+likeCount = post.likes.length
+dislikeCount = post.dislikes.length
 
-Prevents redundant data
+and updated implicitly when users like/dislike/unlike/undislike a post.
+It uses atomic MongoDB operations:
+$addToSet - to add a like/dislike
+$pull - to remove it
+
+
+Data Modeling Approach
+
+Method used: Referencing
+The likes and dislikes fields each contain an array of ObjectId references to User documents.
+Justification: 
+1. Avoids Data Duplication: Since each `User` is a separate document, If user data (username, email, etc.) changes, you don’t need to update every `Post` that references them. Data duplication also makes it easy ot query the database.
+2. Efficient Storage: Only user `_id`s are stored in the post document instead of full user objects, saving space especially when many users like/dislike the same post. 
+3.Supports Growth and scalability: Added to point 2, Likes/dislikes count can grow to large numbers without inflating document size too drastically as each entry is a short ObjectId.
+In general, using the Referencing Data Modeling Approach, given the scope of the project, aligns with MongoDB best practices for many-to-many relationships needed to execute a feature that allows many users to like many posts.
 
 ### 2.2 Real-Time Flow
 
