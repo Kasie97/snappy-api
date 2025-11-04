@@ -88,11 +88,6 @@ export class PostsService {
     return this.buildPostResponse(updatedPost as Post, userId);
   }
 
-  /**
-   * Handles disliking a post.
-   * - Throws if already disliked.
-   * - Removes from likes if user previously liked.
-   */
   async dislikePost(postId: string, userId: string): Promise<PostType> {
     const userObjectId = new Types.ObjectId(userId);
     const post = await this.postModel.findById(postId);

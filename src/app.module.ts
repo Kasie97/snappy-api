@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'path';
+import { join } from 'node:path';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 import { MockAuthGuard } from './auth/mock-auth.guard';
@@ -27,8 +27,20 @@ type GQLRequest = { user?: GQLUser; headers?: Record<string, string> };
       inject: ['PUB_SUB'],
       useFactory: (pubSub: RedisPubSub) => ({
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-        playground: true,
         debug: true,
+
+        playground: {
+          settings: {
+            'request.credentials': 'include',
+          },
+        },
+
+        // ✅ Allow CORS + credentials for same-origin requests
+        cors: {
+          origin: 'http://localhost:3000',
+          credentials: true,
+        },
+
         subscriptions: {
           'graphql-ws': {
             onConnect: (context: unknown) => {
@@ -69,7 +81,9 @@ type GQLRequest = { user?: GQLUser; headers?: Record<string, string> };
             },
           },
         },
+
         context: ({
+          req,
           connection,
         }: {
           req?: GQLRequest;
@@ -80,7 +94,7 @@ type GQLRequest = { user?: GQLUser; headers?: Record<string, string> };
             return { req: { user, headers: {} }, pubSub };
           }
           return {
-            req: {
+            req: req ?? {
               user: {
                 id: 'anon',
                 username: 'anonymous',
